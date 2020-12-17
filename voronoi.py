@@ -1,5 +1,6 @@
 from math import sqrt
 import matplotlib.pyplot as plt
+import collections
 import numpy as np
 
 class Point:
@@ -9,17 +10,14 @@ class Point:
 
     def __eq__(self, other):
         if isinstance(other, Point):
-            return (self.x == other.x
-                    and self.y == other.y
-                    # and self.z == other.z
-            )
+            return self.x == other.x and self.y == other.y
         return False
 
     # def __sub__(self, other):
         # return (self.x - other.x, self.y - other.y, self.z - other.z)
 
-    # def __repr__(self):
-    #     return repr((self.x, self.y, self.z))
+    def __repr__(self):
+        return repr((self.x, self.y))
 
     def __hash__(self):
         return hash((self.x, self.y))
@@ -27,10 +25,6 @@ class Point:
     def inTriagCercumC(self, t):
         cx, cy = t.ccenter[0:2]
         return (self.x - cx)**2 + (self.y - cy)**2 < t.cradius**2
-        # m1 = np.asarray([p.getCoords() - self.getCoords() for p in t.getPoints()])
-        # m2 = np.sum(np.square(m1), axis=1).reshape((3, 1))
-        # m = np.hstack((m1, m2))    # The 3x3 matrix to check
-        # return np.linalg.det(m) <= 0
 
     def getCoords(self):
         return np.array([self.x, self.y])
@@ -45,6 +39,9 @@ class Triangle:
         self.b = b_point
         self.c = c_point
         self.cradius, self.ccenter = self.cercumc()
+
+    def __repr__(self):
+        return repr(('triang'))
 
     def cercumc(self):
         # 2D implemetation
@@ -74,8 +71,10 @@ class Triangle:
         # crossab = np.cross(a,b)
         # crossabp2 = np.inner(crossab, crossab)
 
-        # ccenter = np.cross(ap2*b - bp2*a, crossab) / (2 * crossabp2) + self.c.getCoords()
-        # cradius = sqrt(ap2 * bp2 * np.inner(a-b,a-b)) / (2*sqrt(crossabp2))
+        # ccenter = (np.cross(ap2*b - bp2*a, crossab)
+        #         / (2 * crossabp2) + self.c.getCoords())
+        # cradius = (sqrt(ap2 * bp2 * np.inner(a-b,a-b))
+        #         / (2*sqrt(crossabp2)))
         return(cradius, ccenter)
 
 
@@ -93,6 +92,7 @@ class Triangle:
         for p in self.getPoints():
             if p == point:
                 return True
+        return False
 
     def getEdges(self):
         return [
@@ -111,13 +111,29 @@ class Triangle:
 
 class Voronoi:
     def __init__(self, points):
+        # Super Triangle
         self.supertr = self.superTriang(points)
+        # List that holds all triangles in delaunay
         self.triang = [self.supertr]
-        self.points = points
+        # Reverse triang list
+        self.points = collections.defaultdict(list)
 
+        # Add supertr points to triangulation
+        for p in self.supertr.getPoints():
+            self.points[p].append(self.supertr)
+
+        # Add points one by one
         for p in points:
             self.addPoint(Point(p[0],p[1]))
             # self.draw()
+
+        # Remove triangles from supertr
+        for p in self.supertr.getPoints():
+            for t in self.points[p]:
+                try:
+                    self.triang.remove(t)
+                except:
+                    pass
 
     def addPoint(self, point):
         badT = []
@@ -134,27 +150,33 @@ class Voronoi:
                 else:
                     polygon.append(edge)
 
-        for t in badT: self.triang.remove(t)
+        for t in badT:
+            self.triang.remove(t)
+            for p in t.getPoints():
+                self.points[p].remove(t)
 
         for edge in polygon:
             edge = list(edge)
-            self.triang.append(Triangle(point, edge[0], edge[1]))
+            t = Triangle(point, edge[0], edge[1])
+            self.triang.append(t)
+            for p in t.getPoints():
+                self.points[p].append(t)
 
     def superTriang(self, points):
         points = np.array(points)
-        xmax = max(points[:,0])
-        ymax = max(points[:,1])
-        xmin = min(points[:,0])
-        ymin = min(points[:,1])
+        xmax = np.amax(points[:,0])
+        ymax = np.amax(points[:,1])
+        xmin = np.amin(points[:,0])
+        ymin = np.amin(points[:,1])
         return Triangle(
-            Point(2*xmin-xmax, ymin),
-            Point(2*xmax-xmin, ymin),
+            Point(2*xmin-xmax, ymin-1),
+            Point(2*xmax-xmin, ymin-1),
             Point(xmax-(xmax-xmin)/2, 2*ymax)
         )
 
     def draw(self):
         plt.figure()
-        plt.grid(True, which='both')
+        # plt.grid(True, which='both')
         for t in self.triang:
             t.draw()
 

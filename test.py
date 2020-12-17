@@ -10,20 +10,22 @@ p2 = Point(10, 4)
 # print(t.cradius)
 # print(t.ccenter)
 
-print("in triag t")
-print(p1.inTriagCercumC(t))
-print(p2.inTriagCercumC(t))
-print("in triag T1")
-print(p1.inTriagCercumC(t1))
-print(p2.inTriagCercumC(t1))
+# print("in triag t")
+# print(p1.inTriagCercumC(t))
+# print(p2.inTriagCercumC(t))
+# print("in triag T1")
+# print(p1.inTriagCercumC(t1))
+# print(p2.inTriagCercumC(t1))
 
 
 
-points = np.random.randint(100, 200, size=(100, 2))
-# points = np.array([[0,0], [0,10], [10,10], [0,10]])
+# points = np.random.randint(100, 200, size=(100, 2))
+# points = np.array([[0,0], [10,0], [10,10], [0,10]])
 # print(points)
+points = [[p1, p2] for p1 in range(10) for p2 in range(10)]
 
 vor = Voronoi(points)
+# print(vor.points)
 vor.draw()
 
 # plt.figure()
